@@ -14,8 +14,8 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const API_BASE = "https://backend-api-6o8q.onrender.com";
-  const TASKS_URL = `${API_BASE}/tasks`;
+const API_BASE = "https://backend-api-6o8q.onrender.com";
+const TASKS_URL = `${API_BASE}/api/tasks`;
 
   const showMessage = (type, message) => {
     if (type === "error") {
