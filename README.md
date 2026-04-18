@@ -6,12 +6,12 @@ Kullanıcıların günlük görevlerini kolayca yönetebilmesini sağlar.
 
 ---
 
-## 🚀Canlı Demo
+## Canlı Demo
 
-🎥 Video:
+Video:
 https://youtu.be/IhLqcZqewuI
 
-💻 GitHub:
+GitHub:
 https://github.com/yalcingulsen/gorev-takip-uygulamasi
 
 ---
