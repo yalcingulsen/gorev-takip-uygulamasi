@@ -16,7 +16,7 @@ https://github.com/yalcingulsen/gorev-takip-uygulamasi
 
 ---
 
-## 🧠Proje Özellikleri
+## Proje Özellikleri
 
 * Görev ekleme
 * Görev silme
