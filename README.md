@@ -6,8 +6,6 @@ Kullanıcıların günlük görevlerini kolayca yönetebilmesini sağlar.
 
 ---
 
-## Canlı Demo
-
 Video:
 https://youtu.be/IhLqcZqewuI
 
