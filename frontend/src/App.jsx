@@ -14,7 +14,8 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const API_URL = "https://backend-api-6o8q.onrender.com";
+  const API_BASE = "https://backend-api-6o8q.onrender.com";
+  const TASKS_URL = `${API_BASE}/tasks`;
 
   const showMessage = (type, message) => {
     if (type === "error") {
@@ -31,11 +32,28 @@ function App() {
     }, 2500);
   };
 
+  const getTaskId = (task) => task._id || task.id;
+
+  const safeJson = async (response) => {
+    const text = await response.text();
+    try {
+      return text ? JSON.parse(text) : {};
+    } catch {
+      return {};
+    }
+  };
+
   const fetchTasks = async () => {
     try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-      setTasks(data);
+      const response = await fetch(TASKS_URL);
+      const data = await safeJson(response);
+
+      if (!response.ok) {
+        showMessage("error", data.message || "Görevler alınamadı");
+        return;
+      }
+
+      setTasks(Array.isArray(data) ? data : []);
     } catch (error) {
       showMessage("error", "Görevler alınamadı");
     }
@@ -52,18 +70,18 @@ function App() {
     }
 
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(TASKS_URL, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title,
-          description
-        })
+          title: title.trim(),
+          description: description.trim(),
+        }),
       });
 
-      const data = await response.json();
+      const data = await safeJson(response);
 
       if (!response.ok) {
         showMessage("error", data.message || "Görev eklenemedi");
@@ -72,7 +90,7 @@ function App() {
 
       setTitle("");
       setDescription("");
-      fetchTasks();
+      await fetchTasks();
       showMessage("success", "Görev başarıyla eklendi");
     } catch (error) {
       showMessage("error", "Görev eklenirken hata oluştu");
@@ -81,18 +99,18 @@ function App() {
 
   const deleteTask = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: "DELETE"
+      const response = await fetch(`${TASKS_URL}/${id}`, {
+        method: "DELETE",
       });
 
-      const data = await response.json();
+      const data = await safeJson(response);
 
       if (!response.ok) {
         showMessage("error", data.message || "Görev silinemedi");
         return;
       }
 
-      fetchTasks();
+      await fetchTasks();
       showMessage("success", "Görev silindi");
     } catch (error) {
       showMessage("error", "Görev silinirken hata oluştu");
@@ -101,18 +119,18 @@ function App() {
 
   const toggleTask = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: "PUT"
+      const response = await fetch(`${TASKS_URL}/${id}`, {
+        method: "PUT",
       });
 
-      const data = await response.json();
+      const data = await safeJson(response);
 
       if (!response.ok) {
         showMessage("error", data.message || "Görev güncellenemedi");
         return;
       }
 
-      fetchTasks();
+      await fetchTasks();
       showMessage("success", "Görev durumu güncellendi");
     } catch (error) {
       showMessage("error", "Durum değiştirilirken hata oluştu");
@@ -120,9 +138,9 @@ function App() {
   };
 
   const startEditing = (task) => {
-    setEditingTaskId(task.id);
-    setEditTitle(task.title);
-    setEditDescription(task.description);
+    setEditingTaskId(getTaskId(task));
+    setEditTitle(task.title || "");
+    setEditDescription(task.description || "");
     setErrorMessage("");
     setSuccessMessage("");
   };
@@ -140,18 +158,18 @@ function App() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/${id}/edit`, {
+      const response = await fetch(`${TASKS_URL}/${id}/edit`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: editTitle,
-          description: editDescription
-        })
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+        }),
       });
 
-      const data = await response.json();
+      const data = await safeJson(response);
 
       if (!response.ok) {
         showMessage("error", data.message || "Görev güncellenemedi");
@@ -161,7 +179,7 @@ function App() {
       setEditingTaskId(null);
       setEditTitle("");
       setEditDescription("");
-      fetchTasks();
+      await fetchTasks();
       showMessage("success", "Görev güncellendi");
     } catch (error) {
       showMessage("error", "Görev düzenlenirken hata oluştu");
@@ -196,7 +214,7 @@ function App() {
       minHeight: "100vh",
       background: "linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #e0f2fe 100%)",
       padding: "40px 20px",
-      fontFamily: "Arial, sans-serif"
+      fontFamily: "Arial, sans-serif",
     },
     container: {
       maxWidth: "860px",
@@ -206,19 +224,19 @@ function App() {
       padding: "32px",
       borderRadius: "24px",
       boxShadow: "0 18px 45px rgba(15, 23, 42, 0.12)",
-      border: "1px solid rgba(255,255,255,0.7)"
+      border: "1px solid rgba(255,255,255,0.7)",
     },
     title: {
       textAlign: "center",
       marginBottom: "8px",
       color: "#0f172a",
-      fontSize: "36px"
+      fontSize: "36px",
     },
     subtitle: {
       textAlign: "center",
       color: "#475569",
       marginBottom: "28px",
-      fontSize: "16px"
+      fontSize: "16px",
     },
     messageError: {
       backgroundColor: "#fef2f2",
@@ -226,7 +244,7 @@ function App() {
       padding: "12px 14px",
       borderRadius: "12px",
       marginBottom: "16px",
-      border: "1px solid #fecaca"
+      border: "1px solid #fecaca",
     },
     messageSuccess: {
       backgroundColor: "#ecfdf5",
@@ -234,13 +252,13 @@ function App() {
       padding: "12px 14px",
       borderRadius: "12px",
       marginBottom: "16px",
-      border: "1px solid #bbf7d0"
+      border: "1px solid #bbf7d0",
     },
     statsGrid: {
       display: "grid",
       gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
       gap: "14px",
-      marginBottom: "28px"
+      marginBottom: "28px",
     },
     statCardBlue: {
       background: "linear-gradient(135deg, #dbeafe, #eff6ff)",
@@ -248,7 +266,7 @@ function App() {
       borderRadius: "18px",
       textAlign: "center",
       border: "1px solid #bfdbfe",
-      boxShadow: "0 8px 20px rgba(59, 130, 246, 0.10)"
+      boxShadow: "0 8px 20px rgba(59, 130, 246, 0.10)",
     },
     statCardGreen: {
       background: "linear-gradient(135deg, #dcfce7, #f0fdf4)",
@@ -256,7 +274,7 @@ function App() {
       borderRadius: "18px",
       textAlign: "center",
       border: "1px solid #bbf7d0",
-      boxShadow: "0 8px 20px rgba(34, 197, 94, 0.10)"
+      boxShadow: "0 8px 20px rgba(34, 197, 94, 0.10)",
     },
     statCardOrange: {
       background: "linear-gradient(135deg, #ffedd5, #fff7ed)",
@@ -264,18 +282,18 @@ function App() {
       borderRadius: "18px",
       textAlign: "center",
       border: "1px solid #fdba74",
-      boxShadow: "0 8px 20px rgba(249, 115, 22, 0.10)"
+      boxShadow: "0 8px 20px rgba(249, 115, 22, 0.10)",
     },
     statTitle: {
       margin: "0 0 8px 0",
       color: "#1e293b",
-      fontSize: "16px"
+      fontSize: "16px",
     },
     statNumber: {
       margin: 0,
       fontSize: "28px",
       fontWeight: "bold",
-      color: "#0f172a"
+      color: "#0f172a",
     },
     sectionCard: {
       backgroundColor: "#ffffff",
@@ -283,7 +301,7 @@ function App() {
       padding: "18px",
       marginBottom: "22px",
       border: "1px solid #e2e8f0",
-      boxShadow: "0 8px 20px rgba(15, 23, 42, 0.05)"
+      boxShadow: "0 8px 20px rgba(15, 23, 42, 0.05)",
     },
     input: {
       width: "100%",
@@ -294,7 +312,7 @@ function App() {
       boxSizing: "border-box",
       outline: "none",
       marginBottom: "12px",
-      backgroundColor: "#f8fafc"
+      backgroundColor: "#f8fafc",
     },
     textarea: {
       width: "100%",
@@ -307,7 +325,7 @@ function App() {
       boxSizing: "border-box",
       outline: "none",
       marginBottom: "12px",
-      backgroundColor: "#f8fafc"
+      backgroundColor: "#f8fafc",
     },
     primaryButton: {
       padding: "13px 18px",
@@ -318,12 +336,12 @@ function App() {
       fontSize: "15px",
       fontWeight: "bold",
       cursor: "pointer",
-      boxShadow: "0 10px 20px rgba(37, 99, 235, 0.20)"
+      boxShadow: "0 10px 20px rgba(37, 99, 235, 0.20)",
     },
     filterRow: {
       display: "flex",
       gap: "10px",
-      flexWrap: "wrap"
+      flexWrap: "wrap",
     },
     taskCard: (completed) => ({
       border: completed ? "1px solid #bbf7d0" : "1px solid #e2e8f0",
@@ -333,28 +351,28 @@ function App() {
       background: completed
         ? "linear-gradient(135deg, #f0fdf4, #f8fafc)"
         : "linear-gradient(135deg, #ffffff, #f8fafc)",
-      boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)"
+      boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
     }),
     taskTitle: (completed) => ({
       margin: "0 0 10px 0",
       color: completed ? "#166534" : "#0f172a",
       textDecoration: completed ? "line-through" : "none",
-      fontSize: "20px"
+      fontSize: "20px",
     }),
     taskDescription: {
       margin: "0 0 10px 0",
       color: "#475569",
-      lineHeight: "1.5"
+      lineHeight: "1.5",
     },
     taskDate: {
       margin: "0 0 15px 0",
       color: "#64748b",
-      fontSize: "14px"
+      fontSize: "14px",
     },
     buttonRow: {
       display: "flex",
       gap: "10px",
-      flexWrap: "wrap"
+      flexWrap: "wrap",
     },
     greenButton: {
       padding: "10px 14px",
@@ -363,7 +381,7 @@ function App() {
       background: "linear-gradient(135deg, #22c55e, #16a34a)",
       color: "white",
       cursor: "pointer",
-      fontWeight: "bold"
+      fontWeight: "bold",
     },
     orangeButton: {
       padding: "10px 14px",
@@ -372,7 +390,7 @@ function App() {
       background: "linear-gradient(135deg, #fb923c, #f97316)",
       color: "white",
       cursor: "pointer",
-      fontWeight: "bold"
+      fontWeight: "bold",
     },
     blueButton: {
       padding: "10px 14px",
@@ -381,7 +399,7 @@ function App() {
       background: "linear-gradient(135deg, #3b82f6, #2563eb)",
       color: "white",
       cursor: "pointer",
-      fontWeight: "bold"
+      fontWeight: "bold",
     },
     redButton: {
       padding: "10px 14px",
@@ -390,7 +408,7 @@ function App() {
       background: "linear-gradient(135deg, #ef4444, #dc2626)",
       color: "white",
       cursor: "pointer",
-      fontWeight: "bold"
+      fontWeight: "bold",
     },
     grayButton: {
       padding: "10px 14px",
@@ -399,19 +417,17 @@ function App() {
       background: "linear-gradient(135deg, #94a3b8, #64748b)",
       color: "white",
       cursor: "pointer",
-      fontWeight: "bold"
+      fontWeight: "bold",
     },
     filterButton: (active, type) => {
       const backgrounds = {
-        all: active
-          ? "linear-gradient(135deg, #1e293b, #0f172a)"
-          : "#cbd5e1",
+        all: active ? "linear-gradient(135deg, #1e293b, #0f172a)" : "#cbd5e1",
         completed: active
           ? "linear-gradient(135deg, #22c55e, #16a34a)"
           : "#cbd5e1",
         pending: active
           ? "linear-gradient(135deg, #fb923c, #f97316)"
-          : "#cbd5e1"
+          : "#cbd5e1",
       };
 
       return {
@@ -421,9 +437,9 @@ function App() {
         background: backgrounds[type],
         color: "white",
         cursor: "pointer",
-        fontWeight: "bold"
+        fontWeight: "bold",
       };
-    }
+    },
   };
 
   return (
@@ -515,74 +531,78 @@ function App() {
             </p>
           </div>
         ) : (
-          filteredTasks.map((task) => (
-            <div key={task.id} style={styles.taskCard(task.completed)}>
-              {editingTaskId === task.id ? (
-                <>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    style={styles.input}
-                  />
+          filteredTasks.map((task) => {
+            const taskId = getTaskId(task);
 
-                  <textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    style={styles.textarea}
-                  />
+            return (
+              <div key={taskId} style={styles.taskCard(task.completed)}>
+                {editingTaskId === taskId ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      style={styles.input}
+                    />
 
-                  <div style={styles.buttonRow}>
-                    <button
-                      onClick={() => saveEdit(task.id)}
-                      style={styles.blueButton}
-                    >
-                      Kaydet
-                    </button>
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      style={styles.textarea}
+                    />
 
-                    <button onClick={cancelEditing} style={styles.grayButton}>
-                      İptal
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h3 style={styles.taskTitle(task.completed)}>{task.title}</h3>
+                    <div style={styles.buttonRow}>
+                      <button
+                        onClick={() => saveEdit(taskId)}
+                        style={styles.blueButton}
+                      >
+                        Kaydet
+                      </button>
 
-                  <p style={styles.taskDescription}>
-                    {task.description || "Açıklama yok"}
-                  </p>
+                      <button onClick={cancelEditing} style={styles.grayButton}>
+                        İptal
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 style={styles.taskTitle(task.completed)}>{task.title}</h3>
 
-                  <p style={styles.taskDate}>
-                    Oluşturulma tarihi: {task.createdAt || "Tarih yok"}
-                  </p>
+                    <p style={styles.taskDescription}>
+                      {task.description || "Açıklama yok"}
+                    </p>
 
-                  <div style={styles.buttonRow}>
-                    <button
-                      onClick={() => toggleTask(task.id)}
-                      style={task.completed ? styles.orangeButton : styles.greenButton}
-                    >
-                      {task.completed ? "Tamamlanmadı" : "Tamamlandı"}
-                    </button>
+                    <p style={styles.taskDate}>
+                      Oluşturulma tarihi: {task.createdAt || "Tarih yok"}
+                    </p>
 
-                    <button
-                      onClick={() => startEditing(task)}
-                      style={styles.blueButton}
-                    >
-                      Düzenle
-                    </button>
+                    <div style={styles.buttonRow}>
+                      <button
+                        onClick={() => toggleTask(taskId)}
+                        style={task.completed ? styles.orangeButton : styles.greenButton}
+                      >
+                        {task.completed ? "Tamamlanmadı" : "Tamamlandı"}
+                      </button>
 
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      style={styles.redButton}
-                    >
-                      Sil
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))
+                      <button
+                        onClick={() => startEditing(task)}
+                        style={styles.blueButton}
+                      >
+                        Düzenle
+                      </button>
+
+                      <button
+                        onClick={() => deleteTask(taskId)}
+                        style={styles.redButton}
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
     </div>
